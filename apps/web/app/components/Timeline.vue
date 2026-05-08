@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // import { ref, computed } from 'vue'
-import { Scissors, Bookmark, Trash2, Copy, ZoomIn, ZoomOut } from '@lucide/vue'
+import { Scissors, Bookmark, Trash2, Copy, ZoomIn, ZoomOut, Group, Ungroup } from '@lucide/vue'
 import { useTimelineStore } from '@/stores/timeline'
 
 const timeline = useTimelineStore()
@@ -24,6 +24,12 @@ const zoom = computed({
         </button>
         <button class="flex items-center justify-center rounded-sm p-1 hover:bg-[#2a2a2a] transition-colors" title="Create marker">
           <Bookmark :size="13" :stroke-width="1.5" class="text-white opacity-80" />
+        </button>
+        <button class="flex items-center justify-center rounded-sm p-1 hover:bg-[#2a2a2a] transition-colors" title="Group clips">
+          <Group :size="13" :stroke-width="1.5" class="text-white opacity-80" />
+        </button>
+        <button class="flex items-center justify-center rounded-sm p-1 hover:bg-[#2a2a2a] transition-colors" title="Ungroup clips">
+          <Ungroup :size="13" :stroke-width="1.5" class="text-white opacity-80" />
         </button>
         <button class="flex items-center justify-center rounded-sm p-1 hover:bg-[#2a2a2a] transition-colors" title="Delete clip">
           <Trash2 :size="13" :stroke-width="1.5" class="text-white opacity-80" />
