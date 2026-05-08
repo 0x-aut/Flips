@@ -4,7 +4,7 @@ import {
   ArrowRightLeft, Captions,
   Languages
 } from "@lucide/vue";
-import { ActionMenu } from "../../shared/types/ActionTypes"; // A better way for import is necessary
+// import { ActionMenu } from "../../shared/types/ActionTypes"; // A better way for import is necessary
 
 // We will use useState here to get the actionview to be different when the buttons are clicked.
 const actionInFocus = useState<ActionMenu>("actionview", () => ActionMenu.MEDIA_ASSETS);
