@@ -141,80 +141,100 @@ const ticks = computed(() => {
     <!-- Timeline body -->
     <div class="flex flex-1 overflow-hidden">
 
-      <!-- Fixed left column — track controls -->
+      <!-- Fixed left column -->
       <div class="flex flex-col w-10 flex-shrink-0 border-r border-[#2e2e2e]">
-        <!-- ruler spacer -->
         <div class="h-5 flex-shrink-0 border-b border-[#2e2e2e]" />
-        <!-- one slot per track -->
-        <div
-          v-for="track in timeline.tracks"
-          :key="track.id"
-          class="h-14 flex-shrink-0 border-b border-[#2e2e2e]/40"
-        />
-      </div>
-
-      <!-- Scrollable content -->
-      <div
-        ref="scrollRef"
-        class="flex-1 overflow-x-auto overflow-y-hidden relative select-none"
-        style="scrollbar-width: thin; scrollbar-color: #2e2e2e transparent;"
-      >
-        <!-- inner canvas — width drives scroll -->
-        <div
-          class="relative"
-          :style="{ width: timeline.timelineWidth + 'px', minWidth: '100%' }"
-        >
-          <!-- Ruler -->
+      
+        <template v-for="track in timeline.tracks" :key="track.id">
+          <!-- video track label row -->
           <div
-            class="relative h-5 border-b border-[#2e2e2e] bg-[#1a1a1a] sticky top-0 z-10 cursor-pointer"
-            @mousedown="onRulerMousedown"
+            class="flex flex-col items-center justify-center gap-y-1 border-b border-[#2e2e2e]/40 flex-shrink-0 px-1"
+            :class="track.type === 'video' ? 'h-16' : 'h-10'"
           >
-            <div
-              v-for="tick in ticks"
-              :key="tick.sec"
-              class="absolute top-0 flex flex-col"
-              :style="{ left: tick.x + 'px' }"
+            <button
+              class="flex items-center justify-center w-5 h-5 rounded hover:bg-[#2a2a2a] transition-colors"
+              @click="timeline.toggleTrackMute(track.id)"
+              :title="track.muted ? 'Unmute' : 'Mute'"
             >
+              <component
+                :is="track.muted ? VolumeX : Volume2"
+                :size="11"
+                :color="track.muted ? '#555' : '#888'"
+                :stroke-width="1.5"
+              />
+            </button>
+            <button
+              v-if="track.type === 'video'"
+              class="flex items-center justify-center w-5 h-5 rounded hover:bg-[#2a2a2a] transition-colors"
+              @click="timeline.toggleTrackVisibility(track.id)"
+              :title="track.hidden ? 'Show' : 'Hide'"
+            >
+              <component
+                :is="track.hidden ? EyeOff : Eye"
+                :size="11"
+                :color="track.hidden ? '#555' : '#888'"
+                :stroke-width="1.5"
+              />
+            </button>
+          </div>
+      
+          <!-- separator between video and audio -->
+          <div
+            v-if="track.type === 'video'"
+            class="h-px bg-[#2e2e2e] flex-shrink-0"
+          />
+        </template>
+      </div>
+      
+      <!-- Scrollable content -->
+      <div ref="scrollRef" class="flex-1 overflow-x-auto overflow-y-hidden relative select-none"
+        style="scrollbar-width: thin; scrollbar-color: #2e2e2e transparent;">
+        <div class="relative" :style="{ width: timeline.timelineWidth + 'px', minWidth: '100%' }">
+      
+          <!-- Ruler -->
+          <div class="relative h-5 border-b border-[#2e2e2e] bg-[#1a1a1a] sticky top-0 z-10 cursor-pointer"
+            @mousedown="onRulerMousedown">
+            <div v-for="tick in ticks" :key="tick.sec"
+              class="absolute top-0 flex flex-col"
+              :style="{ left: tick.x + 'px' }">
               <div class="w-px h-2 bg-[#3a3a3a]" />
               <span class="text-[#444] font-sans text-[9px] pl-0.5 leading-none mt-0.5">
                 {{ tick.label }}
               </span>
             </div>
-
-            <!-- markers on ruler -->
-            <div
-              v-for="marker in timeline.markers"
-              :key="marker.id"
-              class="absolute top-0 bottom-0 flex flex-col items-center"
-              :style="{ left: (marker.time * timeline.zoom * 100) + 'px' }"
-            >
+            <!-- markers -->
+            <div v-for="marker in timeline.markers" :key="marker.id"
+              class="absolute top-0 bottom-0"
+              :style="{ left: (marker.time * timeline.zoom * 100) + 'px' }">
               <div class="w-px h-full bg-[#f59e0b]/60" />
               <span class="absolute top-0 left-1 text-[9px] font-sans text-[#f59e0b] whitespace-nowrap">
                 {{ marker.label }}
               </span>
             </div>
           </div>
-
-          <!-- Tracks -->
+      
+          <!-- Tracks + playhead -->
           <div
             class="relative"
-            :style="{ height: (timeline.tracks.length * 56) + 'px' }"
+            :style="{ height: trackAreaHeight + 'px' }"
           >
-            <TimelineTrack
-              v-for="track in timeline.tracks"
-              :key="track.id"
-              :trackId="track.id"
-              :label="track.label"
-              :type="track.type"
-            />
-          
+            <template v-for="track in timeline.tracks" :key="track.id">
+              <TimelineCompTrack
+                :trackId="track.id"
+                :label="track.label"
+                :type="track.type"
+              />
+              <!-- visual separator between video and audio -->
+              <div v-if="track.type === 'video'" class="w-full h-px bg-[#2e2e2e]" />
+            </template>
+      
             <!-- Playhead -->
             <div
               class="absolute top-0 bottom-0 z-20 pointer-events-none"
               :style="{ left: timeline.playheadX + 'px' }"
             >
               <div class="w-2.5 h-2.5 bg-[#0099ff] rounded-full -translate-x-[4.5px]" />
-              <div class="w-px h-full bg-[#0099ff] ml-[4.5px]" />
+              <div class="w-px bg-[#0099ff] mx-auto" style="height: calc(100% - 10px)" />
             </div>
           </div>
         </div>

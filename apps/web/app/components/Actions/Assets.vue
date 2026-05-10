@@ -37,8 +37,9 @@ function addToTimeline(asset: MediaAsset) {
   timeline.addClipToTrack(trackId, {
     name: asset.name,
     src: asset.previewUrl,
+    mediaAssetId: asset.id,
     duration,
-    startTime: timeline.totalDuration,
+    startTime: 0,
     trim: { in: 0, out: 0 },
     speed: 1,
     thumbnails: asset.thumbnail ? [asset.thumbnail] : [],

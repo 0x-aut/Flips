@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 
 export interface Clip {
   id: string
+  mediaAssetId?: number
   name: string
   src: string
   duration: number
@@ -175,6 +176,6 @@ export const useTimelineStore = defineStore('timeline', () => {
 }, {
   persist: {
     storage: piniaPluginPersistedstate.localStorage(),
-    pick: ['zoom', 'currentTime', 'markers']
+    pick: ['zoom', 'currentTime', 'markers', 'tracks']
   }
 })

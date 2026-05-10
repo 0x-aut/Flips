@@ -20,6 +20,11 @@ class FlipsDatabase extends Dexie {
       media: '++id, name, type, createdAt',
       timeline: '++id, projectId, mediaAssetId',
     })
+    this.version(3).stores({
+      projects: '++id, name, ratio, createdAt',
+      media: '++id, name, type, createdAt',
+      timeline: '++id, projectId, mediaAssetId',
+    })
   }
 }
 
