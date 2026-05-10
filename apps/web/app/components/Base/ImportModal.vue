@@ -1,18 +1,108 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { db } from "@/db";
+import { nanoid } from "nanoid";
 import { X, Upload, Sparkles, Wand2, ArrowLeft } from "@lucide/vue";
 
 const emit = defineEmits<{ close: [] }>();
 
 type Mode = null | 'import' | 'generate' | 'muse'
 const mode = ref<Mode>(null)
+const importing = ref(false)
+const dragOver = ref(false)
 
-function select(m: Mode) {
-  mode.value = m
+function select(m: Mode) { mode.value = m }
+function back() { mode.value = null }
+
+// generate a thumbnail from a video file
+function generateVideoThumbnail(file: File): Promise<{ thumbnail: string; duration: number }> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video")
+    const url = URL.createObjectURL(file)
+    video.src = url
+    video.muted = true
+    video.playsInline = true
+
+    video.addEventListener("loadedmetadata", () => {
+      video.currentTime = Math.min(1, video.duration * 0.1)
+    })
+
+    video.addEventListener("seeked", () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = 240
+      canvas.height = 135
+      const ctx = canvas.getContext("2d")!
+      ctx.drawImage(video, 0, 0, 240, 135)
+      const thumbnail = canvas.toDataURL("image/jpeg", 0.7)
+      const duration = video.duration
+      URL.revokeObjectURL(url)
+      resolve({ thumbnail, duration })
+    })
+
+    video.load()
+  })
 }
 
-function back() {
-  mode.value = null
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+}
+
+async function handleFiles(e: Event | DragEvent) {
+  let files: File[] = []
+
+  if (e instanceof DragEvent) {
+    files = Array.from(e.dataTransfer?.files ?? [])
+    dragOver.value = false
+  } else {
+    const input = e.target as HTMLInputElement
+    files = Array.from(input.files ?? [])
+  }
+
+  if (!files.length) return
+  importing.value = true
+
+  for (const file of files) {
+    try {
+      const previewUrl = URL.createObjectURL(file)
+      const type = file.type.startsWith('video')
+        ? 'video'
+        : file.type.startsWith('image')
+        ? 'image'
+        : 'audio'
+
+      let thumbnail: string | undefined
+      let duration: number | undefined
+      let formattedDuration: string | undefined
+
+      if (type === 'video') {
+        const result = await generateVideoThumbnail(file)
+        thumbnail = result.thumbnail
+        duration = result.duration
+        formattedDuration = formatDuration(result.duration)
+      }
+
+      const asset: MediaAsset = {
+        name: file.name,
+        type,
+        size: file.size,
+        file,
+        previewUrl,
+        thumbnail,
+        duration,
+        formattedDuration,
+        createdAt: new Date(),
+      }
+
+      await db.media.add(asset)
+    } catch (error) {
+      console.error('Import failed:', error)
+    }
+  }
+
+  importing.value = false
+  emit('close')
 }
 </script>
 
@@ -22,11 +112,11 @@ function back() {
       class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center"
       @mousedown.self="emit('close')"
     >
-      <div class="bg-[#141414] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl"
+      <div
+        class="bg-[#141414] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl transition-all duration-300"
         :class="mode ? 'w-[400px]' : 'w-[320px]'"
-        style="transition: width 0.25s cubic-bezier(0.34,1.56,0.64,1)"
+        style="transition-timing-function: cubic-bezier(0.34,1.56,0.64,1)"
       >
-
         <!-- Header -->
         <div class="flex items-center justify-between px-3.5 py-2.5 border-b border-[#2e2e2e]">
           <div class="flex items-center gap-x-2">
@@ -49,7 +139,6 @@ function back() {
           </button>
         </div>
 
-        <!-- ── Selection view ── -->
         <Transition
           enter-active-class="transition-all duration-200"
           enter-from-class="opacity-0 translate-y-1"
@@ -59,8 +148,7 @@ function back() {
           leave-to-class="opacity-0"
           mode="out-in"
         >
-
-          <!-- Choice picker -->
+          <!-- Picker -->
           <div v-if="!mode" class="flex flex-col p-2 gap-y-1">
             <button
               class="flex items-center gap-x-3 px-3 py-2.5 rounded-lg hover:bg-[#1e1e1e] transition-colors text-left group"
@@ -74,7 +162,6 @@ function back() {
                 <span class="text-[#555] font-sans text-[11px]">Upload from your device</span>
               </div>
             </button>
-
             <button
               class="flex items-center gap-x-3 px-3 py-2.5 rounded-lg hover:bg-[#1e1e1e] transition-colors text-left group"
               @click="select('generate')"
@@ -87,7 +174,6 @@ function back() {
                 <span class="text-[#555] font-sans text-[11px]">Describe a scene, Runway creates it</span>
               </div>
             </button>
-
             <button
               class="flex items-center gap-x-3 px-3 py-2.5 rounded-lg hover:bg-[#1e1e1e] transition-colors text-left group"
               @click="select('muse')"
@@ -105,28 +191,42 @@ function back() {
             </button>
           </div>
 
-          <!-- Import view -->
+          <!-- Import -->
           <div v-else-if="mode === 'import'" class="flex flex-col p-2 gap-y-2">
             <div
               class="flex flex-col items-center justify-center gap-y-2 border border-dashed rounded-lg py-8 px-4 cursor-pointer transition-colors"
-              :class="'border-[#2a2a2a] hover:border-[#3a3a3a] hover:bg-[#1a1a1a]'"
-              @click="($refs.fileInput as HTMLInputElement)?.click()"
-              @dragover.prevent
-              @drop.prevent
+              :class="dragOver ? 'border-[#2567EC]/50 bg-[#2567EC]/5' : 'border-[#2a2a2a] hover:border-[#3a3a3a] hover:bg-[#1a1a1a]'"
+              @click="!importing && ($refs.fileInput as HTMLInputElement)?.click()"
+              @dragover.prevent="dragOver = true"
+              @dragleave="dragOver = false"
+              @drop.prevent="handleFiles"
             >
               <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1e1e1e] border border-[#2e2e2e]">
-                <Upload :size="14" color="#666" :stroke-width="1.5" />
+                <Upload v-if="!importing" :size="14" color="#666" :stroke-width="1.5" />
+                <svg v-else class="animate-spin w-4 h-4" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="5" stroke="#2a2a2a" stroke-width="1.5"/>
+                  <circle cx="7" cy="7" r="5" stroke="#0099ff" stroke-width="1.5" stroke-dasharray="8 24" stroke-linecap="round"/>
+                </svg>
               </div>
               <div class="flex flex-col items-center gap-y-0.5">
-                <span class="text-white font-sans text-xs">Drop files here</span>
-                <span class="text-[#444] font-sans text-[11px]">or click to browse</span>
+                <span class="text-white font-sans text-xs">
+                  {{ importing ? 'Processing...' : dragOver ? 'Drop to import' : 'Drop files here' }}
+                </span>
+                <span v-if="!importing" class="text-[#444] font-sans text-[11px]">or click to browse</span>
               </div>
-              <input ref="fileInput" type="file" accept="video/*,image/*,audio/*" multiple class="hidden" />
+              <input
+                ref="fileInput"
+                type="file"
+                accept="video/*,image/*,audio/*"
+                multiple
+                class="hidden"
+                @change="handleFiles"
+              />
             </div>
             <p class="text-[#333] font-sans text-[10px] text-center pb-1">MP4, MOV, WebM, MP3, WAV, PNG, JPG</p>
           </div>
 
-          <!-- Generate view -->
+          <!-- Generate -->
           <div v-else-if="mode === 'generate'" class="flex flex-col p-2 gap-y-2">
             <textarea
               placeholder="Describe the scene you want to generate..."
@@ -135,16 +235,14 @@ function back() {
             />
             <div class="flex items-center justify-between">
               <span class="text-[#444] font-sans text-[10px]">Runway Gen-4.5 · ~15s</span>
-              <button
-                class="flex items-center gap-x-1.5 px-3 py-1.5 bg-[#2567EC] hover:bg-[#1d5bd4] rounded-lg transition-colors"
-              >
+              <button class="flex items-center gap-x-1.5 px-3 py-1.5 bg-[#2567EC] hover:bg-[#1d5bd4] rounded-lg transition-colors">
                 <Sparkles :size="11" color="#fff" :stroke-width="1.5" />
                 <span class="text-white font-sans text-xs">Generate</span>
               </button>
             </div>
           </div>
 
-          <!-- Muse view -->
+          <!-- Muse -->
           <div v-else-if="mode === 'muse'" class="flex flex-col p-2 gap-y-2">
             <div
               class="flex flex-col items-center justify-center gap-y-2 border border-dashed rounded-lg py-6 px-4 cursor-pointer transition-colors border-[#2a2a2a] hover:border-[#2567EC]/30 hover:bg-[#2567EC]/5"
@@ -157,7 +255,7 @@ function back() {
                 <span class="text-white font-sans text-xs">Upload your clips</span>
                 <span class="text-[#444] font-sans text-[11px]">Multiple files, any order</span>
               </div>
-              <input ref="museInput" type="file" accept="video/*" multiple class="hidden" />
+              <input ref="museInput" type="file" accept="video/*" multiple class="hidden" @change="handleFiles" />
             </div>
             <textarea
               placeholder="Describe your vision — tone, style, narrative..."
@@ -166,17 +264,13 @@ function back() {
             />
             <div class="flex items-center justify-between">
               <span class="text-[#444] font-sans text-[10px]">Muse will order, trim and transform your clips</span>
-              <button
-                class="flex items-center gap-x-1.5 px-3 py-1.5 bg-[#2567EC] hover:bg-[#1d5bd4] rounded-lg transition-colors"
-              >
+              <button class="flex items-center gap-x-1.5 px-3 py-1.5 bg-[#2567EC] hover:bg-[#1d5bd4] rounded-lg transition-colors">
                 <Wand2 :size="11" color="#fff" :stroke-width="1.5" />
                 <span class="text-white font-sans text-xs">Run Muse</span>
               </button>
             </div>
           </div>
-
         </Transition>
-
       </div>
     </div>
   </Teleport>

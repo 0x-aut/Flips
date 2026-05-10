@@ -93,9 +93,9 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
     </section>
 
     <!-- Timeline panel — relative so the pill can anchor to it -->
-    <section class="relative flex h-[37.5%]">
-      <!-- timeline content goes here -->
-      <Timeline />
+    <section class="relative flex h-[37.5%] w-full min-w-0">
+      <!-- Timeline view -->
+      <TimelineView class="flex-1 min-w-0" />
     
       <!-- Pill + Task Circle — floats above timeline, centered, no layout impact -->
       <div class="absolute bottom-full left-1/2 -translate-x-1/2 z-50 -mb-2.5 flex items-center gap-2">

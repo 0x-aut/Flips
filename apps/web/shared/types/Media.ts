@@ -1,10 +1,15 @@
+// shared/types/Media.ts
+
 export interface MediaAsset {
   id?: number
   name: string
-  type: string
+  type: 'video' | 'image' | 'audio'
   size: number
   file: File
-  previewUrl: string
+  previewUrl: string        // regenerated from file on load
+  thumbnail?: string        // base64 jpeg — persists across sessions
+  duration?: number         // seconds, for video/audio
+  formattedDuration?: string // "01:24"
   createdAt: Date
 }
 
