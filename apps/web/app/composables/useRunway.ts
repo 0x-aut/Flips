@@ -50,7 +50,7 @@ export function useRunway() {
     try {
       const result = await $fetch<{ status: string; output: string | null }>(
         `/api/runway/job/${taskId}`,
-        { headers: headers() }
+        { method: "GET", headers: headers() }
       )
       if (result.status === 'SUCCEEDED' && result.output) {
         const job = ai.jobs.find(j => j.id === jobId)

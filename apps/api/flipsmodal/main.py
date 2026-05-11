@@ -48,7 +48,7 @@ def generateFlipsVideo(req: GenerateVideo, machine_token: str = Depends(require_
   } # Later i will change this to an asynchronous send to the kv_store using .aio
   return { "taskId": f"{task_id}" }
 
-@web_app.get("runway/job/{task_id}")
+@web_app.get("/runway/job/{task_id}")
 def poll_job(task_id: str, machine_token: str = Depends(require_machine_header)):
   key= f"{machine_token}:{task_id}"
   print(key)
