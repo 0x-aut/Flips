@@ -33,7 +33,10 @@ function markerExists(label: string) {
 const highlightedText = computed(() => {
   return text.value.replace(/@(\w+)/g, (match, label) => {
     const exists = markerExists(label)
-    return `<span class="${exists ? 'text-[#0099ff]' : 'text-[#ff4d4d]'}">${match}</span>`
+
+    return `<span style="color: ${
+      exists ? '#0099ff' : '#ff4d4d'
+    }">${match}</span>`
   })
 })
 

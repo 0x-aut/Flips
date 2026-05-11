@@ -126,6 +126,7 @@ function onLoadedMetadata() {
 
 // watch active clip from timeline store
 watch(() => timeline.activeClipSrc, (src) => {
+  const t = videoRef.value?.currentTime ?? 0
   const video = videoRef.value
   if (!video || !src) return
   video.src = src
