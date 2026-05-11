@@ -1,9 +1,32 @@
 <script setup lang="ts">
-
-
-import { ref, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { Download, ArrowUp } from "@lucide/vue";
+import { useAiStore } from "@/stores/ai";
+import { useRunway } from '@/composables/useRunway'
 
+
+// ── AI / task circle ─────────────────────────────────────────────
+const ai = useAiStore()
+const aiJobs = computed(() => ai.jobs)
+const activeJobCount = computed(() => ai.activeJobCount)
+const taskOpen = ref(false)
+const taskPillRef = ref<HTMLElement | null>(null)
+const { pollJob } = useRunway()
+
+// poll active jobs every 3 seconds
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+function toggleTasks() {
+  taskOpen.value = !taskOpen.value
+}
+
+function onTaskPillClickOutside(e: MouseEvent) {
+  if (taskOpen.value && !taskPillRef.value?.contains(e.target as Node)) {
+    taskOpen.value = false
+  }
+}
+
+// ── Command pill ─────────────────────────────────────────────────
 const expanded = ref(false);
 const tall = ref(false);
 const text = ref("");
@@ -27,6 +50,7 @@ function collapse() {
 function send() {
   const val = text.value.trim();
   if (!val) return;
+  // TODO: wire to useRunway().transformClip with selected clip
   text.value = "";
   collapse();
 }
@@ -42,20 +66,28 @@ function autoResize() {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    send();
-  }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   if (e.key === "Escape") collapse();
 }
 
 function onClickOutside(e: MouseEvent) {
-  if (expanded.value && !wrapperRef.value?.contains(e.target as Node))
-    collapse();
+  if (expanded.value && !wrapperRef.value?.contains(e.target as Node)) collapse();
+  onTaskPillClickOutside(e);
 }
 
-onMounted(() => document.addEventListener("mousedown", onClickOutside));
-onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
+onMounted(() => {
+  document.addEventListener("mousedown", onClickOutside)
+  pollInterval = setInterval(async () => {
+    const activeJobs = ai.jobs.filter(j => j.status === 'processing' && j.taskId)
+    for (const job of activeJobs) {
+      await pollJob(job.id, job.taskId!)
+    }
+  }, 3000)
+});
+onUnmounted(() => {
+  document.removeEventListener("mousedown", onClickOutside)
+  if (pollInterval) clearInterval(pollInterval)
+});
 </script>
 
 <template>
@@ -99,8 +131,8 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
     
       <!-- Pill + Task Circle — floats above timeline, centered, no layout impact -->
       <div class="absolute bottom-full left-1/2 -translate-x-1/2 z-50 -mb-2.5 flex items-center gap-2">
-    
-        <!-- Task pill (replaces command pill when open) -->
+      
+        <!-- Task pill — absolute so it doesn't push the circle -->
         <Transition
           enter-active-class="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           enter-from-class="opacity-0 scale-95 translate-y-1"
@@ -112,24 +144,24 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
           <div
             v-if="taskOpen"
             ref="taskPillRef"
-            class="bg-[#121212] border border-[#2e2e2e] min-w-[220px] p-[5px] z-50"
+            class="absolute bottom-full mb-2 left-0 bg-[#121212] border border-[#2e2e2e] min-w-[240px] p-[5px] z-50 shadow-xl"
             :class="aiJobs.length === 1 ? 'rounded-full' : 'rounded-[20px]'"
             @click.stop
           >
             <div
               v-for="job in aiJobs"
               :key="job.id"
-              class="flex items-center gap-2 px-3 py-1 rounded-full transition-opacity duration-500"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-opacity duration-500"
               :class="job.status === 'done' ? 'opacity-35' : 'opacity-100'"
             >
-              <span v-if="job.status === 'processing'" class="flex-shrink-0 w-4 h-4">
+              <span v-if="job.status === 'processing'" class="flex-shrink-0 w-3.5 h-3.5">
                 <svg class="animate-spin w-full h-full" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="5" stroke="#2a2a2a" stroke-width="1.5"/>
                   <circle cx="7" cy="7" r="5" stroke="#0099ff" stroke-width="1.5"
                     stroke-dasharray="8 24" stroke-linecap="round"/>
                 </svg>
               </span>
-              <span v-else class="flex-shrink-0 w-4 text-center text-[13px]">
+              <span v-else class="flex-shrink-0 w-3.5 text-center text-[12px]">
                 {{ job.status === 'done' ? '✓' : '✗' }}
               </span>
               <span
@@ -141,8 +173,8 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
             </div>
           </div>
         </Transition>
-    
-        <!-- Command pill (hidden when task list is open) -->
+      
+        <!-- Command pill -->
         <div
           ref="wrapperRef"
           class="transition-all duration-200"
@@ -191,8 +223,8 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
             </Transition>
           </div>
         </div>
-    
-        <!-- Activity circle -->
+      
+        <!-- Activity circle — black bg, stays fixed -->
         <Transition
           enter-active-class="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           enter-from-class="opacity-0 scale-50"
@@ -206,6 +238,9 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
             class="relative w-[34px] h-[34px] cursor-pointer flex-shrink-0"
             @click="toggleTasks"
           >
+            <!-- black circle background -->
+            <div class="absolute inset-0 rounded-full bg-[#121212] border border-[#2e2e2e]" />
+            <!-- spinner ring -->
             <svg class="absolute inset-0 w-full h-full" viewBox="0 0 34 34" fill="none">
               <circle cx="17" cy="17" r="13" stroke="#1e1e1e" stroke-width="2"/>
               <circle
@@ -217,12 +252,11 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside));
                 style="animation-duration: 1.4s"
               />
             </svg>
-            <span class="absolute inset-0 flex items-center justify-center text-[11px] font-medium text-[#e0e0e0]">
+            <span class="absolute inset-0 flex items-center justify-center text-[11px] font-medium text-white z-10">
               {{ activeJobCount }}
             </span>
           </div>
         </Transition>
-    
       </div>
     </section>
   </main>

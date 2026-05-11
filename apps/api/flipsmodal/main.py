@@ -35,7 +35,7 @@ web_app.add_middleware(
 
 # Runway.py has the function for calling the runway api and here is simply the containing the api url
 @web_app.post("/runway/generatevideo")
-def generateVideo(req: GenerateVideo, machine_token: str = Depends(require_machine_header)):
+def generateFlipsVideo(req: GenerateVideo, machine_token: str = Depends(require_machine_header)):
   # machine_token = require_machine_header(machine_token)
   task_id = generateVideo(req)
   # I would need to add this to the job kv storage for frequent check updates
@@ -48,20 +48,17 @@ def generateVideo(req: GenerateVideo, machine_token: str = Depends(require_machi
   } # Later i will change this to an asynchronous send to the kv_store using .aio
   return { "taskId": f"{task_id}" }
 
-@web_app.post("runway/job/{task_id}")
+@web_app.get("runway/job/{task_id}")
 def poll_job(task_id: str, machine_token: str = Depends(require_machine_header)):
-  # I am getting the status of the job (per task id) freuqently, but this is the normal function for getting it.
-  # machine_token = require_machine_header(machine_token)
-  # Verify that the job belongs to the machine
   key= f"{machine_token}:{task_id}"
+  print(key)
   if key not in kv_store:
     raise HTTPException(status_code=404, detail="Job not found for this machine")
-    
+  
   task = getJobWithId(task_id)
   stored = kv_store[key]
   stored["status"] = task.status
   kv_store[key] = stored
-
   return { "task": task }
 
 @web_app.get("/runway/jobs")
