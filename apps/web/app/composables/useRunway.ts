@@ -17,7 +17,7 @@ export function useRunway() {
     })
 
     try {
-      const { taskId } = await $fetch<{ taskId: string }>('/api/runway/generate', {
+      const { taskId } = await $fetch<{ taskId: string }>('/api/runway/generatevideo', {
         method: 'POST',
         body: { promptText, promptImage }
       })
