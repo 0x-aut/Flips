@@ -19,12 +19,20 @@ const { generateClip } = useRunway()
 
 function select(m: Mode) { mode.value = m }
 function back() { mode.value = null }
+const selectedModel = ref<Model>("seedance2")
+const duration = ref<number>(5)
 
 // ── Generate ────────────────────────────────────────────────────
 async function handleGenerate() {
   if (!generatePrompt.value.trim()) return
   emit('close') // close immediately, task circle handles the rest
-  await generateClip(generatePrompt.value, generateImageDataUri.value)
+  const bodyData = {
+    promptText: generatePrompt.value,
+    promptImg: generateImageDataUri.value,
+    model: selectedModel.value,
+    duration: duration.value
+  }
+  await generateClip(bodyData)
   generatePrompt.value = ''
   generateImageFile.value = null
   generateImageDataUri.value = undefined
@@ -32,7 +40,40 @@ async function handleGenerate() {
 
 
 // ── Import ──────────────────────────────────────────────────────
+const models = [
+  "seedance2",
+  "veo3.1_fast",
+  "veo3.1",
+  "gen4.5",
+  "kling3",
+] as const
 
+type Model = typeof models[number]
+
+
+const modelOpen = ref(false)
+
+function selectModel(m: Model) {
+  selectedModel.value = m
+  console.log(selectedModel.value)
+  modelOpen.value = false
+}
+
+const modelAnchorRef = ref<HTMLElement | null>(null)
+const dropdownPos = ref({ top: 0, left: 0, width: 0 })
+
+function openModelDropdown(e: MouseEvent) {
+  const el = (e.currentTarget as HTMLElement)
+  const rect = el.getBoundingClientRect()
+
+  dropdownPos.value = {
+    top: rect.bottom + 6,
+    left: rect.left,
+    width: rect.width
+  }
+
+  modelOpen.value = !modelOpen.value
+}
 
 async function handleFiles(e: Event | DragEvent) {
   let files: File[] = []
@@ -88,6 +129,34 @@ async function handleFiles(e: Event | DragEvent) {
             <X :size="12" color="#555" :stroke-width="1.5" />
           </button>
         </div>
+
+         <Transition
+            enter-active-class="transition-all duration-150"
+            enter-from-class="opacity-0 translate-y-1"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition-all duration-100"
+            leave-to-class="opacity-0 translate-y-1"
+          >
+            <div
+              v-if="modelOpen"
+              class="fixed z-[99999] bg-[#141414] border border-[#2e2e2e] rounded-lg shadow-2xl overflow-hidden"
+              :style="{
+                top: dropdownPos.top + 'px',
+                left: dropdownPos.left + 'px',
+                width: dropdownPos.width + 'px'
+              }"
+            >
+              <button
+                v-for="m in models"
+                :key="m"
+                class="w-full text-left px-3 py-2 text-xs font-sans capitalize hover:bg-[#1e1e1e] transition-colors"
+                :class="m === selectedModel ? 'text-[#2567EC]' : 'text-white'"
+                @click="selectModel(m)"
+              >
+                {{ m }}
+              </button>
+            </div>
+          </Transition> 
 
         <Transition
           enter-active-class="transition-all duration-200"
@@ -175,6 +244,62 @@ async function handleFiles(e: Event | DragEvent) {
                 {{ generateImageFile ? generateImageFile.name : 'Attach reference image (optional)' }}
               </span>
               <input ref="refImageInput" type="file" accept="image/*" class="hidden" @change="handleReferenceImage" />
+            </div>
+            <div class="flex items-center gap-x-2">
+            
+              <!-- MODEL DROPDOWN -->
+              <div class="relative w-1/2">
+                <button
+                  ref="modelAnchorRef"
+                  class="w-full flex items-center justify-between px-3 py-2 bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg text-left hover:border-[#3a3a3a] transition-colors"
+                  @click="openModelDropdown"
+                >
+                  <span class="text-white font-sans text-xs capitalize">
+                    {{ selectedModel }}
+                  </span>
+                
+                  <div class="w-2 h-2 border-r border-b border-[#555] rotate-45" />
+                </button>
+            
+                <!-- <Transition
+                  enter-active-class="transition-all duration-150"
+                  enter-from-class="opacity-0 translate-y-1"
+                  enter-to-class="opacity-100 translate-y-0"
+                  leave-active-class="transition-all duration-100"
+                  leave-to-class="opacity-0 translate-y-1"
+                >
+                  <div
+                    v-if="modelOpen"
+                    class="absolute z-50 mt-2 w-full bg-[#141414] border border-[#2e2e2e] rounded-lg overflow-hidden shadow-xl"
+                  >
+                    <button
+                      v-for="m in models"
+                      :key="m"
+                      class="w-full text-left px-3 py-2 text-xs font-sans capitalize hover:bg-[#1e1e1e] transition-colors"
+                      :class="m === selectedModel ? 'text-[#2567EC]' : 'text-white'"
+                      @click="selectModel(m)"
+                    >
+                      {{ m }}
+                    </button>
+                  </div>
+                </Transition> -->
+              </div>
+            
+              <!-- DURATION INPUT -->
+              <div class="w-1/2 flex items-center gap-x-2 px-3 py-2 bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg">
+                <span class="text-[#555] text-[11px] font-sans">Duration</span>
+            
+                <input
+                  v-model.number="duration"
+                  type="number"
+                  min="1"
+                  max="10"
+                  class="w-full bg-transparent text-white text-xs font-sans outline-none text-right"
+                />
+            
+                <span class="text-[#444] text-[11px]">s</span>
+              </div>
+            
             </div>
             <div class="flex items-center justify-between">
               <span class="text-[#444] font-sans text-[10px]">Runway Seedance2 · ~5s</span>

@@ -15,7 +15,7 @@ def generateVideo(generateVideo: GenerateVideo):
   client = getRunway()
   try:
     task = client.text_to_video.create(
-      model="seedance2",
+      model=generateVideo.model,
       prompt_text=generateVideo.prompt,
       ratio="1280:720",
       duration=generateVideo.duration,
@@ -26,6 +26,10 @@ def generateVideo(generateVideo: GenerateVideo):
   except TaskFailedError as e:
     print("The video failed to generate")
     print(e.task_details)
+
+
+# def generateVideoFromVideo(generateVideo: GenerateVideoFromVideo):
+#   pass
 
 
 

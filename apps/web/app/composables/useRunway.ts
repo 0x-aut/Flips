@@ -17,26 +17,44 @@ export function useRunway() {
     return { 'Machine-Token': getOrCreateToken() }
   }
 
-  async function generateClip(promptText: string, promptImage?: string) {
+  /*Create a cinematic high speed action chase with the MC on a modern but slightly
+  futuristic motorcycle being chased by other characters in helmets, the sound should be
+  upbeat action style and the shot should be wide, or panoramic and cinematic, 
+  emphasize the buildings and slight disarray of people running around as they chase 
+  across the city, the city in question could be new york downtown */
+  async function generateClip(
+    generateData: {
+      promptText: string,
+      model: string,
+      duration: number,
+      promptImg?: string,
+    },
+  ) {
+    console.log(generateData)
     const jobId = nanoid()
     ai.addJob({
       id: jobId,
       type: 'generate',
-      description: `Generating: "${promptText.slice(0, 35)}..."`,
+      description: `Generating: "${generateData.promptText.slice(0, 35)}..."`,
       status: 'PENDING',
     })
     try {
       const { taskId } = await $fetch<{ taskId: string }>('/api/runway/generatevideo', {
         method: 'POST',
         headers: headers(),
-        body: { prompt: promptText, promptImage, duration: 10 },
+        body: {
+          model: generateData.model,
+          prompt: generateData.promptText,
+          promptImg: generateData.promptImg,
+          duration: generateData.duration
+        },
       })
       ai.updateJobTaskId(jobId, taskId)
       const output = await pollUntilDone(taskId, jobId)
       if (!output) return
       const existingClips = timeline.tracks.flatMap(t => t.clips)
       timeline.addClipToTrack('video-1', {
-        name: promptText.slice(0, 30),
+        name: generateData.promptText.slice(0, 30),
         src: output,
         duration: 5,
         startTime: existingClips.length === 0 ? 0 : timeline.totalDuration,

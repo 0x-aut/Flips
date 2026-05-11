@@ -3,6 +3,8 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const machineToken = getHeader(event, 'Machine-Token') ?? ''
 
+  console.log(body)
+
   return await $fetch(`${config.modalBaseUrl}/runway/generatevideo`, {
     method: 'POST',
     headers: { 'Machine-Token': machineToken, 'Content-Type': 'application/json' },
