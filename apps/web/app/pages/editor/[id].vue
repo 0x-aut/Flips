@@ -3,7 +3,8 @@ import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { Download, ArrowUp } from "@lucide/vue";
 import { useAiStore } from "@/stores/ai";
 import { useRunway } from '@/composables/useRunway'
-
+// import { FFmpeg } from '@ffmpeg/ffmpeg'
+// import { fetchFile } from "@ffmpeg/util";
 
 // ── AI / task circle ─────────────────────────────────────────────
 const ai = useAiStore()
@@ -11,10 +12,30 @@ const aiJobs = computed(() => ai.jobs)
 const activeJobCount = computed(() => ai.activeJobCount)
 const taskOpen = ref(false)
 const taskPillRef = ref<HTMLElement | null>(null)
-const { pollJob } = useRunway()
+const { pollJob, transformClipBetweenMarkers } = useRunway()
 
 // poll active jobs every 3 seconds
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+// parsed mention tokens from pill input
+const mentionedMarkers = computed(() => {
+  const matches = text.value.match(/@(\w+)/g) ?? []
+  return matches.map(m => m.slice(1).toLowerCase()) // ['m1', 'm2']
+})
+
+// check if a marker label exists in timeline
+function markerExists(label: string) {
+  return timeline.markers.some(m => m.label.toLowerCase() === label)
+}
+
+
+// build highlighted HTML for the pill display
+const highlightedText = computed(() => {
+  return text.value.replace(/@(\w+)/g, (match, label) => {
+    const exists = markerExists(label)
+    return `<span class="${exists ? 'text-[#0099ff]' : 'text-[#ff4d4d]'}">${match}</span>`
+  })
+})
 
 function toggleTasks() {
   taskOpen.value = !taskOpen.value
@@ -47,12 +68,31 @@ function collapse() {
   tall.value = false;
 }
 
-function send() {
-  const val = text.value.trim();
-  if (!val) return;
-  // TODO: wire to useRunway().transformClip with selected clip
-  text.value = "";
-  collapse();
+async function send() {
+  const val = text.value.trim()
+  if (!val) return
+
+  const mentions = mentionedMarkers.value
+  const validMarkers = mentions.filter(m => markerExists(m))
+
+  if (validMarkers.length >= 2) {
+    // marker-scoped edit
+    const m1 = timeline.markers.find(m => m.label.toLowerCase() === validMarkers[0])!
+    const m2 = timeline.markers.find(m => m.label.toLowerCase() === validMarkers[1])!
+    const startTime = Math.min(m1.time, m2.time)
+    const endTime = Math.max(m1.time, m2.time)
+    const instruction = val.replace(/@\w+/g, '').trim()
+    await transformClipBetweenMarkers(startTime, endTime, instruction)
+  } else {
+    // normal instruction — transform selected clip
+    const selectedSrc = timeline.activeClipSrc
+    if (selectedSrc) {
+      await transformClipBetweenMarkers(null, null, val, selectedSrc)
+    }
+  }
+
+  text.value = ''
+  collapse()
 }
 
 function autoResize() {
@@ -197,17 +237,28 @@ onUnmounted(() => {
             >
               ✦ Tell Flips what to do
             </span>
-            <textarea
-              v-show="expanded"
-              ref="taRef"
-              v-model="text"
-              placeholder="Tell Flips what to do..."
-              rows="1"
-              class="flex-1 noscrollbar font-sans bg-transparent border-none outline-none resize-none text-[#f0f0f0] text-xs leading-relaxed placeholder-[#444] min-h-5 overflow-y-auto"
-              style="max-height: 80px"
-              @input="autoResize"
-              @keydown="onKeydown"
-            />
+          
+            <!-- highlight overlay — sits on top of textarea visually -->
+            <div v-show="expanded" class="relative flex-1">
+              <!-- invisible textarea for input -->
+              <textarea
+                ref="taRef"
+                v-model="text"
+                placeholder="Tell Flips what to do..."
+                rows="1"
+                class="w-full noscrollbar font-sans bg-transparent border-none outline-none resize-none text-transparent caret-white text-xs leading-relaxed placeholder-[#444] min-h-5 overflow-y-auto absolute inset-0"
+                style="max-height: 80px; color: transparent;"
+                @input="autoResize"
+                @keydown="onKeydown"
+              />
+              <!-- highlight layer — rendered on top, pointer-events-none -->
+              <div
+                class="font-sans text-xs leading-relaxed text-[#f0f0f0] min-h-5 whitespace-pre-wrap break-words pointer-events-none"
+                style="max-height: 80px"
+                v-html="highlightedText || '<span class=\'text-[#444]\'>Tell Flips what to do...</span>'"
+              />
+            </div>
+          
             <Transition
               enter-active-class="transition-all duration-300"
               enter-from-class="opacity-0 scale-75"

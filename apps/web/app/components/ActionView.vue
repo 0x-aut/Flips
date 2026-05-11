@@ -4,7 +4,7 @@ import {
   ArrowRightLeft, Captions,
   Languages
 } from "@lucide/vue";
-// import { ActionMenu } from "../../shared/types/ActionTypes"; // A better way for import is necessary
+import { ActionMenu } from "#shared/types/ActionTypes";
 
 // We will use useState here to get the actionview to be different when the buttons are clicked.
 const actionInFocus = useState<ActionMenu>("actionview", () => ActionMenu.MEDIA_ASSETS);
@@ -22,7 +22,6 @@ console.log(actionInFocus.value);
   <section class="flex bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg h-full w-full">
     <div class="flex flex-col gap-y-0.5 items-center justify-start border border-l-0 border-t-0 border-b-0 border-r-[#2e2e2e] h-full w-1/7 py-1">
       <button 
-        @click="changeActionInFocus(ActionMenu.MEDIA_ASSETS)" 
         :class="[
           'flex items-center justify-center p-1.5 rounded-md border',
           actionInFocus === ActionMenu.MEDIA_ASSETS
@@ -30,11 +29,11 @@ console.log(actionInFocus.value);
             : 'border-transparent'
         ]" 
         title="Media" name="Media"
+        @click="changeActionInFocus(ActionMenu.MEDIA_ASSETS)" 
       >
         <FolderOpen :size="13" color="#FFFFFF" :stroke-width="1.5" />
       </button>
       <button 
-        @click="changeActionInFocus(ActionMenu.SOUNDS)" 
         :class="[
           'flex items-center justify-center p-1.5 rounded-md border',
           actionInFocus === ActionMenu.SOUNDS
@@ -42,11 +41,11 @@ console.log(actionInFocus.value);
             : 'border-transparent'
         ]"
         title="Sounds" name="Sounds"
+        @click="changeActionInFocus(ActionMenu.SOUNDS)" 
       >
         <Headphones :size="13" color="#FFFFFF" :stroke-width="1.5" />
       </button>
       <button 
-        @click="changeActionInFocus(ActionMenu.TRANSITIONS)" 
         :class="[
           'flex items-center justify-center p-1.5 rounded-md border',
           actionInFocus === ActionMenu.TRANSITIONS
@@ -54,6 +53,7 @@ console.log(actionInFocus.value);
             : 'border-transparent'
         ]"
         title="Transitions" name="Transitions"
+        @click="changeActionInFocus(ActionMenu.TRANSITIONS)" 
       >
         <ArrowRightLeft :size="13" color="#FFFFFF" :stroke-width="1.5" />
       </button>
