@@ -113,7 +113,12 @@ const currentTime = ref(0)
 const duration = ref(0)
 
 function onTimeUpdate() {
-  currentTime.value = videoRef.value?.currentTime ?? 0
+  // currentTime.value = videoRef.value?.currentTime ?? 0
+  const t = videoRef.value?.currentTime ?? 0
+  currentTime.value = t
+  playback.updateCurrentTime(t) // will have to check this
+  timeline.updateCurrentTime(t) // will have to check this
+  // I can update this here to edit the current time in the localstorage as well
 }
 function onLoadedMetadata() {
   duration.value = videoRef.value?.duration ?? 0
@@ -126,7 +131,18 @@ watch(() => timeline.activeClipSrc, (src) => {
   video.src = src
   video.load()
   playback.playing = false
+  if (Math.abs(video.currentTime - t) > 0.1) {
+    video.currentTime = t
+  }
 })
+
+function onProgressClick(e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const pct = (e.clientX - rect.left) / rect.width
+  const t = pct * duration.value
+  if (videoRef.value) videoRef.value.currentTime = pct * duration.value
+  timeline.seekTo(t)
+}
 
 onMounted(() => {
   initWebGL()
@@ -192,11 +208,7 @@ onUnmounted(() => {
 
       <!-- Progress bar -->
       <div class="flex-1 h-[2px] bg-[#2a2a2a] rounded-full relative cursor-pointer"
-        @click="(e) => {
-          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-          const pct = (e.clientX - rect.left) / rect.width
-          if (videoRef) videoRef.currentTime = pct * duration
-        }"
+        @click="onProgressClick"
       >
         <div
           class="absolute left-0 top-0 h-full bg-[#0099ff] rounded-full transition-none"

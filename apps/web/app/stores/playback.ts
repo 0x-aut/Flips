@@ -16,6 +16,11 @@ export const usePlaybackStore = defineStore('playback', () => {
     duration.value > 0 ? currentTime.value / duration.value : 0
   )
 
+  function updateCurrentTime(currentInSeconds: number) { // Highly inefficient but i will leave it at this
+    currentTime.value = currentInSeconds
+    console.log("current time: ", currentTime.value)
+  }
+  
   const formattedCurrentTime = computed(() => formatTime(currentTime.value))
   const formattedDuration = computed(() => formatTime(duration.value))
 
@@ -91,6 +96,7 @@ export const usePlaybackStore = defineStore('playback', () => {
     muted,
     playbackRate,
     // derived
+    updateCurrentTime,
     progress,
     formattedCurrentTime,
     formattedDuration,

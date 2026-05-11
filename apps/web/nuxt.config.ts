@@ -7,6 +7,10 @@ export default defineNuxtConfig({
   
   css: ['./app/assets/css/main.css'],
 
+  runtimeConfig: {
+    modalBaseUrl: process.env.MODAL_BASE_URL,
+  },
+  
   vite: {
     plugins: [
       tailwindcss(),

@@ -52,6 +52,11 @@ export const useTimelineStore = defineStore('timeline', () => {
   // playhead position in pixels
   const playheadX = computed(() => currentTime.value * zoom.value * 100)
 
+  function updateCurrentTime(seconds: number) {
+    currentTime.value = seconds
+    console.log("current time: ", currentTime.value)
+  }
+  
   function getTrack(id: string) {
     return tracks.value.find(t => t.id === id)
   }
@@ -127,6 +132,17 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
   }
 
+  function updateClipSrc(clipId: string, src: string) {
+    for (const track of tracks.value) {
+      const clip = track.clips.find(c => c.id === clipId)
+      if (clip) {
+        clip.src = src
+        activeClipSrc.value = src  // update preview canvas too
+        break
+      }
+    }
+  }
+
   function toggleTrackMute(trackId: string) {
     const track = getTrack(trackId)
     if (track) track.muted = !track.muted
@@ -161,12 +177,14 @@ export const useTimelineStore = defineStore('timeline', () => {
     timelineWidth,
     playheadX,
     // actions
+    updateCurrentTime,
     getTrack,
     addClipToTrack,
     removeClip,
     selectClip,
     duplicateClip,
     updateClipTrim,
+    updateClipSrc,
     updateClipStartTime,
     toggleTrackMute,
     toggleTrackVisibility,
