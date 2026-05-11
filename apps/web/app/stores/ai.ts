@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export type JobType = 'generate' | 'transform' | 'sound' | 'isolate' | 'transcribe' | 'muse' | 'export'
-export type JobStatus = 'processing' | 'done' | 'failed'
+export type JobStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED'
 
 export interface AIJob {
   id: string
@@ -20,7 +20,7 @@ export const useAiStore = defineStore('ai', () => {
   const jobs = ref<AIJob[]>([])
 
   const activeJobCount = computed(() =>
-    jobs.value.filter(j => j.status === 'processing').length
+    jobs.value.filter(j => j.status === 'PENDING').length
   )
 
   const hasJobs = computed(() => jobs.value.length > 0)
@@ -37,7 +37,7 @@ export const useAiStore = defineStore('ai', () => {
   function completeJob(id: string) {
     const job = jobs.value.find(j => j.id === id)
     if (!job) return
-    job.status = 'done'
+    job.status = 'SUCCEEDED'
     setTimeout(() => {
       jobs.value = jobs.value.filter(j => j.id !== id)
     }, 2000)
@@ -55,7 +55,7 @@ export const useAiStore = defineStore('ai', () => {
   }
 
   function clearCompleted() {
-    jobs.value = jobs.value.filter(j => j.status === 'processing')
+    jobs.value = jobs.value.filter(j => j.status === 'PENDING')
   }
 
   return {

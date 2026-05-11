@@ -78,7 +78,7 @@ function onClickOutside(e: MouseEvent) {
 onMounted(() => {
   document.addEventListener("mousedown", onClickOutside)
   pollInterval = setInterval(async () => {
-    const activeJobs = ai.jobs.filter(j => j.status === 'processing' && j.taskId)
+    const activeJobs = ai.jobs.filter(j => j.status === 'PENDING' && j.taskId)
     for (const job of activeJobs) {
       await pollJob(job.id, job.taskId!)
     }
@@ -154,7 +154,7 @@ onUnmounted(() => {
               class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-opacity duration-500"
               :class="job.status === 'done' ? 'opacity-35' : 'opacity-100'"
             >
-              <span v-if="job.status === 'processing'" class="flex-shrink-0 w-3.5 h-3.5">
+              <span v-if="job.status === 'PENDING'" class="flex-shrink-0 w-3.5 h-3.5">
                 <svg class="animate-spin w-full h-full" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="5" stroke="#2a2a2a" stroke-width="1.5"/>
                   <circle cx="7" cy="7" r="5" stroke="#0099ff" stroke-width="1.5"

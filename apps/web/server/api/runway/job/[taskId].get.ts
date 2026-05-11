@@ -3,8 +3,10 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const machineToken = getHeader(event, 'Machine-Token') ?? ''
 
-  return await $fetch(`${config.modalBaseUrl}/runway/job/${taskId}`, {
+  const job_response =  await $fetch(`${config.modalBaseUrl}/runway/job/${taskId}`, {
     method: "GET",
     headers: { 'Machine-Token': machineToken },
   })
+  console.log("JOB RESPONSE: ", job_response)
+  return job_response
 })

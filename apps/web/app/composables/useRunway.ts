@@ -18,7 +18,7 @@ export function useRunway() {
       id: jobId,
       type: 'generate',
       description: `Generating: "${promptText.slice(0, 35)}..."`,
-      status: 'processing',
+      status: 'PENDING',
     })
     try {
       const { taskId } = await $fetch<{ taskId: string }>('/api/runway/generatevideo', {
@@ -53,8 +53,11 @@ export function useRunway() {
         { method: "GET", headers: headers() }
       )
       if (result.status === 'SUCCEEDED' && result.output) {
+        console.log("A JOB IS COMPLETED")
         const job = ai.jobs.find(j => j.id === jobId)
         if (job?.type === 'generate') {
+          ai.completeJob(jobId)
+          job.status = result.status
           const existingClips = timeline.tracks.flatMap(t => t.clips)
           timeline.addClipToTrack('video-1', {
             name: job.description.replace('Generating: "', '').replace('..."', '').slice(0, 30),
@@ -85,7 +88,7 @@ export function useRunway() {
       id: jobId,
       type: 'transform',
       description: `Transforming: "${promptText.slice(0, 35)}..."`,
-      status: 'processing',
+      status: 'PENDING',
     })
     try {
       const { taskId } = await $fetch<{ taskId: string }>('/api/runway/transform', {
