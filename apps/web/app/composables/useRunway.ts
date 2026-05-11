@@ -52,31 +52,36 @@ export function useRunway() {
         `/api/runway/job/${taskId}`,
         { method: "GET", headers: headers() }
       )
-      if (result.status === 'SUCCEEDED' && result.output) {
-        console.log("A JOB IS COMPLETED")
-        const job = ai.jobs.find(j => j.id === jobId)
-        if (job?.type === 'generate') {
-          ai.completeJob(jobId)
-          job.status = result.status
-          const existingClips = timeline.tracks.flatMap(t => t.clips)
-          timeline.addClipToTrack('video-1', {
-            name: job.description.replace('Generating: "', '').replace('..."', '').slice(0, 30),
-            src: result.output,
-            duration: 5,
-            startTime: existingClips.length === 0 ? 0 : timeline.totalDuration,
-            trim: { in: 0, out: 0 },
-            speed: 1,
-            thumbnails: [],
-          })
-        }
-        if (job?.type === 'transform' && timeline.selectedClipId) {
-          timeline.updateClipSrc(timeline.selectedClipId, result.output)
-        }
-        ai.completeJob(jobId)
-      }
-      if (result.status === 'FAILED') {
-        ai.failJob(jobId, 'Runway task failed')
-      }
+      console.log(result)
+      // if (result.status == 'SUCCEEDED') {
+      //   console.log("A JOB IS COMPLETED WITH ID: ", jobId)
+      //   ai.completeJob(jobId)
+      //   const job = ai.jobs.find(j => j.id == jobId)
+      //   console.log("Job is: ", job)
+        
+      //   if (job?.type === 'generate') {
+      //     console.log("JOB STATUS IS NOW: ", job.status)
+      //     job.status = result.status
+      //     const existingClips = timeline.tracks.flatMap(t => t.clips)
+      //     timeline.addClipToTrack('video-1', {
+      //       name: job.description.replace('Generating: "', '').replace('..."', '').slice(0, 30),
+      //       src: result.output,
+      //       duration: 5,
+      //       startTime: existingClips.length === 0 ? 0 : timeline.totalDuration,
+      //       trim: { in: 0, out: 0 },
+      //       speed: 1,
+      //       thumbnails: [],
+      //     })
+      //   }
+      //   if (job?.type === 'transform' && timeline.selectedClipId) {
+      //     timeline.updateClipSrc(timeline.selectedClipId, result.output)
+      //   }
+      //   ai.completeJob(jobId)
+      // }
+      // if (result.status === 'FAILED') {
+      //   ai.failJob(jobId, 'Runway task failed')
+      // }
+      return result
     } catch (err) {
       console.warn('Poll failed silently:', err)
     }

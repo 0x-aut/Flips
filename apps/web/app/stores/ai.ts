@@ -46,7 +46,7 @@ export const useAiStore = defineStore('ai', () => {
   function failJob(id: string, error: string) {
     const job = jobs.value.find(j => j.id === id)
     if (!job) return
-    job.status = 'failed'
+    job.status = 'FAILED'
     job.error = error
   }
 

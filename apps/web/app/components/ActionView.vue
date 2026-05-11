@@ -58,7 +58,6 @@ console.log(actionInFocus.value);
         <ArrowRightLeft :size="13" color="#FFFFFF" :stroke-width="1.5" />
       </button>
       <button 
-        @click="changeActionInFocus(ActionMenu.CAPTIONS)" 
         :class="[
           'flex items-center justify-center p-1.5 rounded-md border',
           actionInFocus === ActionMenu.CAPTIONS
@@ -66,6 +65,7 @@ console.log(actionInFocus.value);
             : 'border-transparent'
         ]" 
         title="Captions" name="Captions"
+        @click="changeActionInFocus(ActionMenu.CAPTIONS)" 
       >
         <Captions :size="13" color="#FFFFFF" :stroke-width="1.5" />
       </button>

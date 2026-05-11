@@ -79,8 +79,10 @@ onMounted(() => {
   document.addEventListener("mousedown", onClickOutside)
   pollInterval = setInterval(async () => {
     const activeJobs = ai.jobs.filter(j => j.status === 'PENDING' && j.taskId)
+    console.log("Active jobs is: ", activeJobs)
     for (const job of activeJobs) {
-      await pollJob(job.id, job.taskId!)
+      const results = await pollJob(job.id, job.taskId!)
+      console.log("results: ", results)
     }
   }, 3000)
 });

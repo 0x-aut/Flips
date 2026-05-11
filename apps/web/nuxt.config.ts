@@ -27,7 +27,6 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/fonts',
-    '@nuxt/hints',
     '@nuxt/image',
     '@nuxt/scripts',
     '@nuxtjs/device',
