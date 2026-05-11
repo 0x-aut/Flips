@@ -78,7 +78,7 @@ async def list_jobs(
   image=image,
   secrets=[modal.Secret.from_name("flips-secrets")],
   timeout=3600,
-  scaledown_window=300
+  scaledown_window=3600
 )
 @modal.asgi_app()
 def fastapi_app():
