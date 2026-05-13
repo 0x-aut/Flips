@@ -26,10 +26,13 @@ async function saveVideo(blob: Blob) {
       const previewUrl = URL.createObjectURL(file)
       // let thumbnail, duration, formattedDuration
       const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'audio'
-      const result = await generateVideoThumbnail(file)
-      const thumbnail = result.thumbnail
-      const duration = result.duration
-      const formattedDuration = formatDuration(result.duration)
+      let result, thumbnail, duration, formattedDuration
+      if (type === "video") {
+        result = await generateVideoThumbnail(file)
+        thumbnail = result.thumbnail
+        duration = result.duration
+        formattedDuration = formatDuration(result.duration) 
+      }
       await db.media.add({ name: file.name, type, size: file.size, file, previewUrl, thumbnail, duration, formattedDuration, createdAt: new Date() } as MediaAsset)
     }
   } catch (err) {

@@ -60,7 +60,7 @@ export function useRunway() {
       ai.completeJob(jobId)
     } catch (err) {
       console.error(err)
-      ai.failJob(jobId, 'Generation failed')
+      ai.failJob(jobId, 'Video Generation failed')
     }
   }
   
@@ -247,7 +247,7 @@ export function useRunway() {
   }
 
   async function pollUntilDone(taskId: string, jobId: string): Promise<string | null> {
-    const maxAttempts = 60
+    const maxAttempts = 100
     let attempts = 0
     while (attempts < maxAttempts) {
       await sleep(6000)
@@ -267,13 +267,50 @@ export function useRunway() {
       }
       attempts++
     }
-    ai.failJob(jobId, 'Timed out after 2 minutes')
+    ai.failJob(jobId, 'Timed out after max attempts') // Correct this to handle long request times
     return null
+  }
+  
+  async function generateSound(promptText: string, soundDuration: number) {
+    const jobId = nanoid()
+    ai.addJob({
+      id: jobId,
+      type: 'generate',
+      description: `Generating: "${generateData.promptText.slice(0, 35)}..."`,
+      status: 'PENDING',
+    })
+    try {
+      const { taskId } = await $fetch<{ taskId: string }>('api/runway/soundeffect', {
+        method: 'POST',
+        headers: headers(),
+        body: {
+          prompt: promptText,
+          duration: soundDuration
+        }
+      })
+      ai.updateJobTaskId(jobId, taskId)
+      const output = await pollUntilDone(taskId, jobId)
+      if (!output) return
+      const existingAudio = timeline.tracks.flatMap(t => t.clips)
+      timeline.addClipToTrack('audio-1', {
+        name: promptText.slice(0, 30),
+        src: output,
+        duration: 5,
+        startTime: existingAudio.length === 0 ? 0 : timeline.totalDuration,
+        trim: { in: 0, out: 0 },
+        speed: 1,
+        thumbnails: [],
+      })
+      ai.completeJob(jobId)
+    } catch (error) {
+      console.error(error)
+      ai.failJob(jobId, 'Sound Generation failed')
+    }
   }
 
   function sleep(ms: number) {
     return new Promise(r => setTimeout(r, ms))
   }
 
-  return { generateClip, transformClip, pollJob }
+  return { generateClip, generateSound, transformClip, pollJob }
 }
