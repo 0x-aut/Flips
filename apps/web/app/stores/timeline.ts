@@ -71,6 +71,13 @@ export const useTimelineStore = defineStore('timeline', () => {
     activeClipSrc.value = clip.src
   }
 
+  function addAudioToTrack(trackId: string, clip: Omit<Clip, "id">) {
+    const track = getTrack(trackId)
+    if (!track) return
+    const id = nanoid()
+    track.clips.push({ ...clip, id })
+  }
+
   function removeClip(clipId: string) {
     for (const track of tracks.value) {
       const idx = track.clips.findIndex(c => c.id === clipId)

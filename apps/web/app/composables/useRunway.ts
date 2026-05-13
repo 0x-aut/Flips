@@ -51,7 +51,7 @@ export function useRunway() {
       timeline.addClipToTrack('video-1', {
         name: generateData.promptText.slice(0, 30),
         src: output,
-        duration: 5,
+        duration: generateData.duration,
         startTime: existingClips.length === 0 ? 0 : timeline.totalDuration,
         trim: { in: 0, out: 0 },
         speed: 1,
@@ -256,7 +256,11 @@ export function useRunway() {
           `/api/runway/job/${taskId}`,
           { headers: headers() }
         )
-        if (result.status === 'SUCCEEDED') return result.output
+        if (result.status === 'SUCCEEDED') {
+          console.log("SUCCEEDED JOB")
+          await getVideo(result.output[0]) // TEST the [id].vue polljob to see if it can only be one function call
+          return result.output
+        }
         if (result.status === 'FAILED') {
           ai.failJob(jobId, 'Runway task failed')
           return null
@@ -275,12 +279,12 @@ export function useRunway() {
     const jobId = nanoid()
     ai.addJob({
       id: jobId,
-      type: 'generate',
-      description: `Generating: "${generateData.promptText.slice(0, 35)}..."`,
+      type: 'sound',
+      description: `Generating: "${promptText.slice(0, 35)}..."`,
       status: 'PENDING',
     })
     try {
-      const { taskId } = await $fetch<{ taskId: string }>('api/runway/soundeffect', {
+      const { taskId } = await $fetch<{ taskId: string }>('/api/runway/soundeffect', {
         method: 'POST',
         headers: headers(),
         body: {
@@ -291,21 +295,12 @@ export function useRunway() {
       ai.updateJobTaskId(jobId, taskId)
       const output = await pollUntilDone(taskId, jobId)
       if (!output) return
-      const existingAudio = timeline.tracks.flatMap(t => t.clips)
-      timeline.addClipToTrack('audio-1', {
-        name: promptText.slice(0, 30),
-        src: output,
-        duration: 5,
-        startTime: existingAudio.length === 0 ? 0 : timeline.totalDuration,
-        trim: { in: 0, out: 0 },
-        speed: 1,
-        thumbnails: [],
-      })
       ai.completeJob(jobId)
     } catch (error) {
       console.error(error)
       ai.failJob(jobId, 'Sound Generation failed')
     }
+    // Right now runway gives us a video file instead of an audio file, we need to convert to audio in order to push it in the right timeline track
   }
 
   function sleep(ms: number) {

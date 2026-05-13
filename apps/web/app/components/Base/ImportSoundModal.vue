@@ -12,14 +12,11 @@ const mode = ref<Mode>(null)
 const importing = ref(false)
 const dragOver = ref(false)
 const generatePrompt = ref('')
-const generateImageFile = ref<File | null>(null)
-const generateImageDataUri = ref<string | undefined>(undefined)
 
-const { generateClip } = useRunway()
+const { generateSound } = useRunway()
 
 function select(m: Mode) { mode.value = m }
 function back() { mode.value = null }
-const selectedModel = ref<Model>("seedance2")
 const duration = ref<number>(5)
 
 // ── Generate ────────────────────────────────────────────────────
@@ -28,52 +25,14 @@ async function handleGenerate() {
   emit('close') // close immediately, task circle handles the rest
   const bodyData = {
     promptText: generatePrompt.value,
-    promptImg: generateImageDataUri.value,
-    model: selectedModel.value,
     duration: duration.value
   }
-  await generateClip(bodyData)
+  await generateSound(bodyData.promptText, bodyData.duration)
   generatePrompt.value = ''
-  generateImageFile.value = null
-  generateImageDataUri.value = undefined
 }
 
 
 // ── Import ──────────────────────────────────────────────────────
-const models = [
-  "seedance2",
-  "veo3.1_fast",
-  "veo3.1",
-  "gen4.5",
-  "kling3",
-] as const
-
-type Model = typeof models[number]
-
-
-const modelOpen = ref(false)
-
-function selectModel(m: Model) {
-  selectedModel.value = m
-  console.log(selectedModel.value)
-  modelOpen.value = false
-}
-
-const modelAnchorRef = ref<HTMLElement | null>(null)
-const dropdownPos = ref({ top: 0, left: 0, width: 0 })
-
-function openModelDropdown(e: MouseEvent) {
-  const el = (e.currentTarget as HTMLElement)
-  const rect = el.getBoundingClientRect()
-
-  dropdownPos.value = {
-    top: rect.bottom + 6,
-    left: rect.left,
-    width: rect.width
-  }
-
-  modelOpen.value = !modelOpen.value
-}
 
 async function handleFiles(e: Event | DragEvent) {
   let files: File[] = []
