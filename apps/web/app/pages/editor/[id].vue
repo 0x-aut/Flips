@@ -1,10 +1,57 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
-import { Download, ArrowUp } from "@lucide/vue";
+import { Download, ArrowUp, CircleCheck, CircleAlert } from "@lucide/vue";
 import { useAiStore } from "@/stores/ai";
 import { useRunway } from '@/composables/useRunway'
-// import { FFmpeg } from '@ffmpeg/ffmpeg'
-// import { fetchFile } from "@ffmpeg/util";
+import { db } from "@/db";
+import type { Project } from "#shared/types/Media"
+
+const pageRoute = useRoute();
+
+const project = ref<Project | null>(null);
+
+const project_id = ref<number|null>(null);
+
+
+
+// Editing project name 
+const editingTitle = ref(false)
+// const projectTitle = ref(project.name || "New project")
+const projectTitle = ref("New project")
+
+watch(project, (value) => {
+  if (value) {
+    projectTitle.value = value.name
+  }
+})
+
+
+const titleInputRef = ref<HTMLInputElement|null>(null)
+
+async function beginTitleEdit() {
+  editingTitle.value = true
+  await nextTick()
+  titleInputRef.value?.focus()
+  titleInputRef.value?.select()
+}
+
+async function saveProjectTitle() {
+  editingTitle.value = false
+  const trimmed = projectTitle.value.trim()
+  if (!trimmed) {
+    projectTitle.value = "New project"
+  }
+  try {
+    await db.projects.update(project.value.id, {
+      name: projectTitle.value.trim() || "New project",
+    })
+  } catch (error) {
+    console.log("An error occured while saving the new project name: ", error)
+  }
+}
+// ------END------
+
+
 
 // ── AI / task circle ─────────────────────────────────────────────
 const ai = useAiStore()
@@ -118,8 +165,17 @@ function onClickOutside(e: MouseEvent) {
   onTaskPillClickOutside(e);
 }
 
-onMounted(() => {
+
+// onBeforeMount(async () => {
+// })
+
+
+onMounted(async () => {
   document.addEventListener("mousedown", onClickOutside)
+  const editor_slug = Number(pageRoute.params.id)
+  project_id.value = editor_slug
+  console.info("project_id.value:", project_id.value)
+  project.value = await db.projects.get(project_id.value);
   pollInterval = setInterval(async () => {
     const activeJobs = ai.jobs.filter(j => j.status === 'PENDING' && j.taskId)
     console.log("Active jobs is: ", activeJobs)
@@ -138,8 +194,27 @@ onUnmounted(() => {
 <template>
   <main class="flex flex-col gap-y-1 px-2 py-2 h-screen w-screen bg-[#0d0d0d]">
     <nav class="flex h-8 items-center justify-between">
-      <div>
-        <span class="text-sm text-white font-sans">New project</span>
+      <div class="flex items-center min-w-0">
+        <!-- DISPLAY -->
+         <button
+          v-if="!editingTitle"
+          class="text-sm text-white font-sans px-1.5 py-0.5 rounded-md hover:bg-[#1e1e1e] transition-colors truncate max-w-[220px]"
+          @click="beginTitleEdit"
+        >
+          {{ projectTitle }}
+        </button> 
+      
+        <!-- INPUT -->
+         <input
+          v-else
+          ref="titleInputRef"
+          v-model="projectTitle"
+          type="text"
+          maxlength="60"
+          class=" border-none focus:border-none rounded-md px-2 py-1 text-sm text-white font-sans outline-none w-[220px]"
+          @keydown.enter="saveProjectTitle"
+          @blur="saveProjectTitle"
+        /> 
       </div>
       <div>
         <button
@@ -197,21 +272,22 @@ onUnmounted(() => {
               v-for="job in aiJobs"
               :key="job.id"
               class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-opacity duration-500"
-              :class="job.status === 'done' ? 'opacity-35' : 'opacity-100'"
+              :class="job.status === 'SUCCEEDED' ? 'opacity-35' : 'opacity-100'"
             >
-              <span v-if="job.status === 'PENDING'" class="flex-shrink-0 w-3.5 h-3.5">
+              <span v-if="job.status === 'PENDING'" class="shrink-0 w-3.5 h-3.5">
                 <svg class="animate-spin w-full h-full" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="5" stroke="#2a2a2a" stroke-width="1.5"/>
-                  <circle cx="7" cy="7" r="5" stroke="#0099ff" stroke-width="1.5"
-                    stroke-dasharray="8 24" stroke-linecap="round"/>
+                  <circle cx="7" cy="7" r="5" stroke="#0099ff" stroke-width="1.5" stroke-dasharray="8 24" stroke-linecap="round"/>
                 </svg>
               </span>
-              <span v-else class="flex-shrink-0 w-3.5 text-center text-[12px]">
-                {{ job.status === 'done' ? '✓' : '✗' }}
+              <span v-else class="flex justify-center items-center">
+                <!-- {{ job.status === 'SUCCEEDED' ? '✓' : '✗' }}   -->
+                <CircleCheck v-if="job.status == 'SUCCEEDED'" class="flex items-center justify-center" :size="13" :stroke-width="1.5" color="#5CB85C" />
+                <CircleAlert v-else class="flex items-center justify-center" :size="13" :stroke-width="1.5" color="#FF4D4D"  />
               </span>
               <span
                 class="font-sans text-xs flex-1 whitespace-nowrap"
-                :class="job.status === 'failed' ? 'text-[#ff4d4d]' : job.status === 'done' ? 'text-[#555]' : 'text-[#b0b0b0]'"
+                :class="job.status === 'FAILED' ? 'text-[#ff4d4d]' : job.status === 'SUCCEEDED' ? 'text-[#5CB85C]' : 'text-[#b0b0b0]'"
               >
                 {{ job.description }}
               </span>

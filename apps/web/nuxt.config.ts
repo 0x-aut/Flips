@@ -3,6 +3,12 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   
+  // nitro: {
+  //   routeRules: {
+  //     '/api/runway/**': { timeout: 1500000 }, // 15 minutes
+  //   }
+  // },
+  
   devtools: { enabled: true },
   
   css: ['./app/assets/css/main.css'],
