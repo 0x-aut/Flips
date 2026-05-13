@@ -45,7 +45,7 @@ const skeletonCount = 6
     </nav>
     <!-- Selection and options section and projects section -->
     <section
-      class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3"
+      class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2"
     >
       <!-- Skeletons -->
       <template v-if="loading">
