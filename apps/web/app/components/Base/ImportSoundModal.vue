@@ -122,41 +122,13 @@ async function handleFiles(e: Event | DragEvent) {
               <ArrowLeft :size="12" color="#666" :stroke-width="1.5" />
             </button>
             <span class="text-white font-sans text-xs">
-              {{ mode === 'import' ? 'Import media' : mode === 'generate' ? 'Generate clip' : mode === 'muse' ? 'Muse' : 'Add media' }}
+              {{ mode === 'import' ? 'Import sound' : mode === 'generate' ? 'Generate sound' : 'Import sound' }}
             </span>
           </div>
           <button class="flex items-center justify-center w-5 h-5 rounded hover:bg-[#2a2a2a] transition-colors" @click="emit('close')">
             <X :size="12" color="#555" :stroke-width="1.5" />
           </button>
         </div>
-
-         <Transition
-            enter-active-class="transition-all duration-150"
-            enter-from-class="opacity-0 translate-y-1"
-            enter-to-class="opacity-100 translate-y-0"
-            leave-active-class="transition-all duration-100"
-            leave-to-class="opacity-0 translate-y-1"
-          >
-            <div
-              v-if="modelOpen"
-              class="fixed z-[99999] bg-[#141414] border border-[#2e2e2e] rounded-lg shadow-2xl overflow-hidden"
-              :style="{
-                top: dropdownPos.top + 'px',
-                left: dropdownPos.left + 'px',
-                width: dropdownPos.width + 'px'
-              }"
-            >
-              <button
-                v-for="m in models"
-                :key="m"
-                class="w-full text-left px-3 py-2 text-xs font-sans capitalize hover:bg-[#1e1e1e] transition-colors"
-                :class="m === selectedModel ? 'text-[#2567EC]' : 'text-white'"
-                @click="selectModel(m)"
-              >
-                {{ m }}
-              </button>
-            </div>
-          </Transition> 
 
         <Transition
           enter-active-class="transition-all duration-200"
@@ -174,7 +146,7 @@ async function handleFiles(e: Event | DragEvent) {
                 <Upload :size="13" color="#888" :stroke-width="1.5" />
               </div>
               <div class="flex flex-col gap-y-0.5">
-                <span class="text-white font-sans text-xs">Import media</span>
+                <span class="text-white font-sans text-xs">Import sound</span>
                 <span class="text-[#555] font-sans text-[11px]">Upload from your device</span>
               </div>
             </button>
@@ -184,19 +156,7 @@ async function handleFiles(e: Event | DragEvent) {
               </div>
               <div class="flex flex-col gap-y-0.5">
                 <span class="text-white font-sans text-xs">Generate with AI</span>
-                <span class="text-[#555] font-sans text-[11px]">Describe a scene, Runway creates it</span>
-              </div>
-            </button>
-            <button class="flex items-center gap-x-3 px-3 py-2.5 rounded-lg hover:bg-[#1e1e1e] transition-colors text-left group" @click="select('muse')">
-              <div class="flex items-center justify-center w-7 h-7 rounded-md bg-[#2567EC]/10 border border-[#2567EC]/20 flex-shrink-0 group-hover:border-[#2567EC]/40 transition-colors">
-                <Wand2 :size="13" color="#2567EC" :stroke-width="1.5" />
-              </div>
-              <div class="flex flex-col gap-y-0.5">
-                <div class="flex items-center gap-x-1.5">
-                  <span class="text-white font-sans text-xs">Muse</span>
-                  <span class="text-[10px] font-sans px-1 py-px rounded-full bg-[#2567EC]/10 text-[#2567EC] border border-[#2567EC]/20">AI</span>
-                </div>
-                <span class="text-[#555] font-sans text-[11px]">Auto-assemble clips from your footage</span>
+                <span class="text-[#555] font-sans text-[11px]">Describe a sound, Runway creates it</span>
               </div>
             </button>
           </div>
@@ -222,71 +182,22 @@ async function handleFiles(e: Event | DragEvent) {
                 <span class="text-white font-sans text-xs">{{ importing ? 'Processing...' : dragOver ? 'Drop to import' : 'Drop files here' }}</span>
                 <span v-if="!importing" class="text-[#444] font-sans text-[11px]">or click to browse</span>
               </div>
-              <input ref="fileInput" type="file" accept="video/*,image/*,audio/*" multiple class="hidden" @change="handleFiles" />
+              <input ref="fileInput" type="file" accept="audio/*" multiple class="hidden" @change="handleFiles" />
             </div>
-            <p class="text-[#333] font-sans text-[10px] text-center pb-1">MP4, MOV, WebM, MP3, WAV, PNG, JPG</p>
+            <p class="text-[#333] font-sans text-[10px] text-center pb-1">MP3, WAV</p>
           </div>
 
           <!-- Generate -->
           <div v-else-if="mode === 'generate'" class="flex flex-col p-2 gap-y-2">
             <textarea
               v-model="generatePrompt"
-              placeholder="Describe the scene you want to generate..."
+              placeholder="Describe the sound effect you want to generate..."
               class="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg px-3 py-2.5 text-white font-sans text-xs placeholder-[#444] outline-none resize-none focus:border-[#3a3a3a] transition-colors"
               rows="4"
             />
-            <div
-              class="flex items-center gap-x-2 px-2 py-1.5 border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg cursor-pointer transition-colors"
-              @click="($refs.refImageInput as HTMLInputElement)?.click()"
-            >
-              <Upload :size="11" color="#555" :stroke-width="1.5" />
-              <span class="text-[#444] font-sans text-[11px]">
-                {{ generateImageFile ? generateImageFile.name : 'Attach reference image (optional)' }}
-              </span>
-              <input ref="refImageInput" type="file" accept="image/*" class="hidden" @change="handleReferenceImage" />
-            </div>
             <div class="flex items-center gap-x-2">
-            
-              <!-- MODEL DROPDOWN -->
-              <div class="relative w-1/2">
-                <button
-                  ref="modelAnchorRef"
-                  class="w-full flex items-center justify-between px-3 py-2 bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg text-left hover:border-[#3a3a3a] transition-colors"
-                  @click="openModelDropdown"
-                >
-                  <span class="text-white font-sans text-xs capitalize">
-                    {{ selectedModel }}
-                  </span>
-                
-                  <div class="w-2 h-2 border-r border-b border-[#555] rotate-45" />
-                </button>
-            
-                <!-- <Transition
-                  enter-active-class="transition-all duration-150"
-                  enter-from-class="opacity-0 translate-y-1"
-                  enter-to-class="opacity-100 translate-y-0"
-                  leave-active-class="transition-all duration-100"
-                  leave-to-class="opacity-0 translate-y-1"
-                >
-                  <div
-                    v-if="modelOpen"
-                    class="absolute z-50 mt-2 w-full bg-[#141414] border border-[#2e2e2e] rounded-lg overflow-hidden shadow-xl"
-                  >
-                    <button
-                      v-for="m in models"
-                      :key="m"
-                      class="w-full text-left px-3 py-2 text-xs font-sans capitalize hover:bg-[#1e1e1e] transition-colors"
-                      :class="m === selectedModel ? 'text-[#2567EC]' : 'text-white'"
-                      @click="selectModel(m)"
-                    >
-                      {{ m }}
-                    </button>
-                  </div>
-                </Transition> -->
-              </div>
-            
               <!-- DURATION INPUT -->
-              <div class="w-1/2 flex items-center gap-x-2 px-3 py-2 bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg">
+              <div class="w-full flex items-center gap-x-2 px-3 py-2 bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg">
                 <span class="text-[#555] text-[11px] font-sans">Duration</span>
             
                 <input
@@ -302,7 +213,7 @@ async function handleFiles(e: Event | DragEvent) {
             
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-[#444] font-sans text-[10px]">Runway {{selectedModel}} · ~{{duration}}s</span>
+              <span class="text-[#444] font-sans text-[10px]">High quality sound effects</span>
               <button
                 class="flex items-center gap-x-1.5 px-3 py-1.5 bg-[#2567EC] hover:bg-[#1d5bd4] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="!generatePrompt.trim()"
@@ -310,35 +221,6 @@ async function handleFiles(e: Event | DragEvent) {
               >
                 <Sparkles :size="11" color="#fff" :stroke-width="1.5" />
                 <span class="text-white font-sans text-xs">Generate</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Muse -->
-          <div v-else-if="mode === 'muse'" class="flex flex-col p-2 gap-y-2">
-            <div
-              class="flex flex-col items-center justify-center gap-y-2 border border-dashed rounded-lg py-6 px-4 cursor-pointer transition-colors border-[#2a2a2a] hover:border-[#2567EC]/30 hover:bg-[#2567EC]/5"
-              @click="($refs.museInput as HTMLInputElement)?.click()"
-            >
-              <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-[#2567EC]/10 border border-[#2567EC]/20">
-                <Wand2 :size="14" color="#2567EC" :stroke-width="1.5" />
-              </div>
-              <div class="flex flex-col items-center gap-y-0.5">
-                <span class="text-white font-sans text-xs">Upload your clips</span>
-                <span class="text-[#444] font-sans text-[11px]">Multiple files, any order</span>
-              </div>
-              <input ref="museInput" type="file" accept="video/*" multiple class="hidden" @change="handleFiles" />
-            </div>
-            <textarea
-              placeholder="Describe your vision — tone, style, narrative..."
-              class="w-full bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg px-3 py-2.5 text-white font-sans text-xs placeholder-[#444] outline-none resize-none focus:border-[#3a3a3a] transition-colors"
-              rows="3"
-            />
-            <div class="flex items-center justify-between">
-              <span class="text-[#444] font-sans text-[10px]">Muse will order, trim and transform your clips</span>
-              <button class="flex items-center gap-x-1.5 px-3 py-1.5 bg-[#2567EC] hover:bg-[#1d5bd4] rounded-lg transition-colors">
-                <Wand2 :size="11" color="#fff" :stroke-width="1.5" />
-                <span class="text-white font-sans text-xs">Run Muse</span>
               </button>
             </div>
           </div>

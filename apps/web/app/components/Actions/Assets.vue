@@ -72,8 +72,8 @@ async function deleteAsset(e: MouseEvent, asset: MediaAsset) {
     <div class="flex justify-between items-center w-full px-1 py-1 h-8 border border-b-[#2e2e2e] border-t-0 border-l-0 border-r-0">
       <span class="font-sans font-light text-xs text-[#555555]">Assets</span>
       <button
-        @click="showImport = true"
         class="flex items-center justify-center rounded-sm border border-[#2e2e2e] gap-x-1.5 px-2 py-0.5 hover:bg-[#1e1e1e] transition-colors"
+        @click="showImport = true"
       >
         <CloudDownload :size="13" color="#FFFFFF" :stroke-width="1.5" />
         <span class="font-sans text-xs text-[#FFFFFF] font-light">Import</span>
