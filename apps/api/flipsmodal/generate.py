@@ -4,14 +4,14 @@ import os
 from dotenv import load_dotenv
 from config import getRunway
 from runwayml import RunwayML, TaskFailedError
-from models import GenerateVideo
+from models import GenerateVideo, TransformVideo
 
 load_dotenv()
 
 # client = RunwayML(api_key=os.getenv("FLIPS_RUNWAYML_API_KEY"))
 
 
-def generateVideo(generateVideo: GenerateVideo):
+def generate_video(generateVideo: GenerateVideo):
   client = getRunway()
   try:
     task = client.text_to_video.create(
@@ -28,8 +28,19 @@ def generateVideo(generateVideo: GenerateVideo):
     print(e.task_details)
 
 
-# def generateVideoFromVideo(generateVideo: GenerateVideoFromVideo):
-#   pass
+def transform_video(transformVideo: TransformVideo):
+  client = getRunway()
+  try:
+    transform_task = client.video_to_video.create(
+     model = "gen4_aleph",
+     prompt_text = transformVideo.prompt,
+     videoUri = transformVideo.promptVideoSrc
+    )
+    print(f"Transform task is: {transform_task}")
+    return transform_task.id
+  except TaskFailedError as e:
+    print("The video failed to generate")
+    print(e.task_details)
 
 
 

@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import modal
 import os
-from generate import generateVideo
+from generate import generate_video, transform_video
 from utils import getJobWithId, require_machine_header
-from models import GenerateVideo
+from models import GenerateVideo, TransformVideo
 
 # Following docs to create fastapi endpoint for modal
 image = (
@@ -37,7 +37,7 @@ web_app.add_middleware(
 @web_app.post("/runway/generatevideo")
 def generateFlipsVideo(req: GenerateVideo, machine_token: str = Depends(require_machine_header)):
   # machine_token = require_machine_header(machine_token)
-  task_id = generateVideo(req)
+  task_id = generate_video(req)
   # I would need to add this to the job kv storage for frequent check updates
   kv_store[f"{machine_token}:{task_id}"] = {
     "taskId": task_id,
@@ -46,6 +46,19 @@ def generateFlipsVideo(req: GenerateVideo, machine_token: str = Depends(require_
     "prompt": req.prompt,
     "machine_token": machine_token,
   } # Later i will change this to an asynchronous send to the kv_store using .aio
+  return { "taskId": f"{task_id}" }
+
+@web_app.post("/runway/editvideo")
+def edit_video(req: TransformVideo, machine_token: str = Depends(require_machine_header)):
+  task_id = transform_video(req)
+  kv_store[f"{machine_token}:{task_id}"] = {
+    "taskId": task_id,
+    "type": "edit_video",
+    "status": "PENDING",
+    "prompt": req.prompt,
+    "videosrc": req.promptVideoSrc,
+    "machine_token": machine_token
+  }
   return { "taskId": f"{task_id}" }
 
 @web_app.get("/runway/job/{task_id}")

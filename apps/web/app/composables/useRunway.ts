@@ -16,12 +16,7 @@ export function useRunway() {
   function headers() {
     return { 'Machine-Token': getOrCreateToken() }
   }
-
-  /*Create a cinematic high speed action chase with the MC on a modern but slightly
-  futuristic motorcycle being chased by other characters in helmets, the sound should be
-  upbeat action style and the shot should be wide, or panoramic and cinematic, 
-  emphasize the buildings and slight disarray of people running around as they chase 
-  across the city, the city in question could be new york downtown */
+  
   async function generateClip(
     generateData: {
       promptText: string,
@@ -76,42 +71,49 @@ export function useRunway() {
     return ffmpeg
   }
   
-  async function extractSegment(src: string, startTime: number, endTime: number): Promise<string> {
+  async function extractSegment(
+    src: string,
+    startTime: number,
+    endTime: number
+  ) {
+  
     const ff = await getFFmpeg()
-    
+  
     const duration = endTime - startTime
-    
+  
     await ff.writeFile(
-      'input.mp4',
+      "input.mp4",
       await fetchFile(src)
     )
-    
+  
     await ff.exec([
       '-ss', String(startTime),
       '-i', 'input.mp4',
       '-t', String(duration),
+    
       '-c:v', 'libx264',
+      '-preset', 'ultrafast',
+    
       '-c:a', 'aac',
+    
       'output.mp4'
     ])
-    
-    const data = await ff.readFile('output.mp4')
-    
-    // const uint8 = new Uint8Array(data)
-    
-    const blob = new Blob([data], {
-      type: 'video/mp4'
-    })
-    
-    return await new Promise((resolve) => {
-      const reader = new FileReader()
-    
-      reader.onload = () => {
-        resolve(reader.result as string)
+  
+    const data = await ff.readFile("output.mp4")
+  
+    if (typeof data === "string") {
+      throw new Error("Expected binary data")
+    }
+  
+    const segmentedFile = new File(
+      [data],
+      "segment.mp4",
+      {
+        type: "video/mp4"
       }
-    
-      reader.readAsDataURL(blob)
-    })
+    )
+
+    return uploadRunwayFile(segmentedFile, "segment.mp4")
   }
 
   async function pollJob(jobId: string, taskId: string) {
@@ -122,12 +124,10 @@ export function useRunway() {
       )
       // console.log(result)
       if (result.status == 'SUCCEEDED') {
-        console.log("A JOB IS COMPLETED WITH ID: ", jobId)
         const job = ai.jobs.find(j => j.id == jobId)
         if (job?.type === 'generate') {
-          console.log("JOB STATUS IS NOW: ", job.status)
           job.status = result.status
-          // For nowi wjust want to update the import for clicking
+          // For now i just want to update the import for clicking
           try {
             await getVideo(result.output[0])
           } catch (err) {
@@ -163,14 +163,17 @@ export function useRunway() {
     ai.addJob({
       id: jobId,
       type: 'transform',
-      description: `Transforming: "${promptText.slice(0, 35)}..."`,
+      description: `Editing: "${promptText.slice(0, 35)}..."`,
       status: 'PENDING',
     })
     try {
       const { taskId } = await $fetch<{ taskId: string }>('/api/runway/transform', {
         method: 'POST',
         headers: headers(),
-        body: { videoUrl, promptText },
+        body: {
+          prompt: promptText,
+          promptVideoSrc: videoUrl
+        },
       })
       ai.updateJobTaskId(jobId, taskId)
       const output = await pollUntilDone(taskId, jobId)
@@ -197,7 +200,7 @@ export function useRunway() {
       description: hasMarkers
         ? `Editing ${instruction.slice(0, 30)}...`
         : `Transforming: "${instruction.slice(0, 30)}..."`,
-      status: 'processing',
+      status: 'PENDING',
     })
   
     try {
@@ -221,9 +224,8 @@ export function useRunway() {
         method: 'POST',
         headers: headers(),
         body: {
-          videoUrl: videoDataUri,
-          promptText: instruction,
-          model: 'seedance2'
+          promptVideoSrc: videoDataUri,
+          prompt: instruction,
         }
       })
   
@@ -248,7 +250,7 @@ export function useRunway() {
     const maxAttempts = 60
     let attempts = 0
     while (attempts < maxAttempts) {
-      await sleep(2000)
+      await sleep(6000)
       try {
         const result = await $fetch<{ status: string; output: string | null; progress: number }>(
           `/api/runway/job/${taskId}`,

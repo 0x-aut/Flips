@@ -15,6 +15,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     modalBaseUrl: process.env.MODAL_BASE_URL,
+    runwayStorageKey: process.env.RUNWAY_STORAGE_KEY,
   },
   
   vite: {

@@ -49,7 +49,7 @@ async function saveProjectTitle() {
     console.log("An error occured while saving the new project name: ", error)
   }
 }
-// ------END------
+
 
 
 
@@ -165,11 +165,6 @@ function onClickOutside(e: MouseEvent) {
   onTaskPillClickOutside(e);
 }
 
-
-// onBeforeMount(async () => {
-// })
-
-
 onMounted(async () => {
   document.addEventListener("mousedown", onClickOutside)
   const editor_slug = Number(pageRoute.params.id)
@@ -183,7 +178,7 @@ onMounted(async () => {
       const results = await pollJob(job.id, job.taskId!)
       console.log("results: ", results)
     }
-  }, 3000)
+  }, 6000) //Let us poll every 6 seconds instead of 3 though docs say avoid fixed polling
 });
 onUnmounted(() => {
   document.removeEventListener("mousedown", onClickOutside)
@@ -281,7 +276,6 @@ onUnmounted(() => {
                 </svg>
               </span>
               <span v-else class="flex justify-center items-center">
-                <!-- {{ job.status === 'SUCCEEDED' ? '✓' : '✗' }}   -->
                 <CircleCheck v-if="job.status == 'SUCCEEDED'" class="flex items-center justify-center" :size="13" :stroke-width="1.5" color="#5CB85C" />
                 <CircleAlert v-else class="flex items-center justify-center" :size="13" :stroke-width="1.5" color="#FF4D4D"  />
               </span>

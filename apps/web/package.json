@@ -20,6 +20,7 @@
     "@nuxt/scripts": "^1.0.6",
     "@nuxtjs/device": "^4.0.0",
     "@pinia/nuxt": "^0.11.3",
+    "@runwayml/sdk": "^3.21.0",
     "@tailwindcss/vite": "^4.2.4",
     "@unhead/vue": "^2.1.13",
     "@vueuse/rxjs": "^14.3.0",
