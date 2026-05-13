@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from config import getRunway
 from runwayml import RunwayML, TaskFailedError
-from models import GenerateVideo, TransformVideo
+from models import GenerateVideo, TransformVideo, GenerateSound
 
 load_dotenv()
 
@@ -40,6 +40,21 @@ def transform_video(transformVideo: TransformVideo):
     return transform_task.id
   except TaskFailedError as e:
     print("The video failed to generate")
+    print(e.task_details)
+
+
+def generate_sound_effect(generateSound: GenerateSound):
+  client = getRunway()
+  try:
+    task = client.sound_effect.create(
+      model = "eleven_text_to_sound_v2",
+      prompt_text = generateSound.prompt,
+      duration = generateSound.duration
+    )
+    print(f"Sound effect task is: {task}")
+    return task.id
+  except TaskFailedError as e:
+    print("The sound failed to generate")
     print(e.task_details)
 
 

@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import modal
 import os
-from generate import generate_video, transform_video
+from generate import generate_video, transform_video, generate_sound_effect
 from utils import getJobWithId, require_machine_header
-from models import GenerateVideo, TransformVideo
+from models import GenerateVideo, TransformVideo, GenerateSound
 
 # Following docs to create fastapi endpoint for modal
 image = (
@@ -57,6 +57,18 @@ def edit_video(req: TransformVideo, machine_token: str = Depends(require_machine
     "status": "PENDING",
     "prompt": req.prompt,
     "videosrc": req.promptVideoSrc,
+    "machine_token": machine_token
+  }
+  return { "taskId": f"{task_id}" }
+
+@web_app.post("/runway/createsoundeffect")
+def create_sound_effect(req: GenerateSound, machine_token: str = Depends(require_machine_header)):
+  task_id = generate_sound_effect(req)
+  kv_store[f"{machine_token}:{task_id}"] = {
+    "taskId": task_id,
+    "type": "generate_sound",
+    "status": "PENDING",
+    "prompt": req.prompt,
     "machine_token": machine_token
   }
   return { "taskId": f"{task_id}" }
