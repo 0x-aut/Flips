@@ -14,6 +14,7 @@ load_dotenv()
 def generate_video(generateVideo: GenerateVideo):
   client = getRunway()
   try:
+    # test = client.image_to_video.create()
     task = client.text_to_video.create(
       model=generateVideo.model,
       prompt_text=generateVideo.prompt,

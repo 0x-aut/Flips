@@ -129,7 +129,7 @@ export function useRunway() {
           job.status = result.status
           // For now i just want to update the import for clicking
           try {
-            await getVideo(result.output[0])
+            // await getVideo(result.output[0]) // Commenting this out to prevent double import of video from link
           } catch (err) {
             console.log("An error occurred while saving generated video: ", err)
           }

@@ -34,16 +34,36 @@ function addToTimeline(asset: MediaAsset) {
     ? asset.duration
     : 5 // fallback 5 seconds
 
-  timeline.addClipToTrack(trackId, {
-    name: asset.name,
-    src: asset.previewUrl,
-    mediaAssetId: asset.id,
-    duration,
-    startTime: 0,
-    trim: { in: 0, out: 0 },
-    speed: 1,
-    thumbnails: asset.thumbnail ? [asset.thumbnail] : [],
-  })
+  const track = timeline.getTrack(trackId)
+
+  // We want to add clip to timeline in a smart manner
+  // If there is a clip in timeline track then we want to check the end time of the clip in timeline
+  if (track.clips.length > 0) {
+    const lastMedia = track.clips[track.clips.length - 1]
+    console.info("Timeline clips is length: ", lastMedia.startTime + (lastMedia.duration - lastMedia.trim.in - lastMedia.trim.out) / lastMedia.speed)
+    timeline.addClipToTrack(trackId, {
+      name: asset.name,
+      src: asset.previewUrl,
+      mediaAssetId: asset.id,
+      duration,
+      startTime: lastMedia.startTime + (lastMedia.duration - lastMedia.trim.in - lastMedia.trim.out) / lastMedia.speed,
+      trim: { in: 0, out: 0 },
+      speed: 1,
+      thumbnails: asset.thumbnail ? [asset.thumbnail] : [],
+    })
+  } else {
+    console.log("start time is: ", 0)
+    timeline.addClipToTrack(trackId, {
+      name: asset.name,
+      src: asset.previewUrl,
+      mediaAssetId: asset.id,
+      duration,
+      startTime: 0,
+      trim: { in: 0, out: 0 },
+      speed: 1,
+      thumbnails: asset.thumbnail ? [asset.thumbnail] : [],
+    })
+  }
   console.log('tracks after add:', JSON.stringify(timeline.tracks.map(t => ({ id: t.id, clips: t.clips.length }))))
 }
 

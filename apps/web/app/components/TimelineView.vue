@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Scissors, Bookmark, Trash2, Copy, ZoomIn, ZoomOut } from '@lucide/vue'
+import {
+  Scissors, Bookmark, Trash2,
+  Copy, ZoomIn, ZoomOut,
+  VolumeX, Volume2, EyeOff,
+  Eye
+} from '@lucide/vue'
 import { useTimelineStore } from '@/stores/timeline'
 import { usePlaybackStore } from '@/stores/playback'
 

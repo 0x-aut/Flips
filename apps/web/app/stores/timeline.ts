@@ -36,7 +36,7 @@ export const useTimelineStore = defineStore('timeline', () => {
 
   // total duration — minimum 30s, expands to fit all clips
   const totalDuration = computed(() => {
-    let max = 30
+    let max = 0
     for (const track of tracks.value) {
       for (const clip of track.clips) {
         const end = clip.startTime + (clip.duration - clip.trim.in - clip.trim.out) / clip.speed
