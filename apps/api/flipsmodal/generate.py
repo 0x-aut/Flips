@@ -14,16 +14,25 @@ load_dotenv()
 def generate_video(generateVideo: GenerateVideo):
   client = getRunway()
   try:
-    # test = client.image_to_video.create()
-    task = client.text_to_video.create(
-      model=generateVideo.model,
-      prompt_text=generateVideo.prompt,
-      ratio="1280:720",
-      duration=generateVideo.duration,
-    )
-    print("Task complete:", task)
-    print(f"Task id is: {task.id}")
-    return task.id
+    if generateVideo.promptImg == None:
+      task = client.text_to_video.create(
+        model=generateVideo.model,
+        prompt_text=generateVideo.prompt,
+        ratio="1280:720",
+        duration=generateVideo.duration,
+      )
+      print(f"Task id is: {task.id}")
+      return task.id
+    else:
+      task = client.image_to_video.create(
+        model="gen4.5", # This model is a really bad model i cannot lie, seedance is the best model
+        prompt_text=generateVideo.prompt,
+        prompt_img=generateVideo.promptImg,
+        duration=generateVideo.duration,
+        ratio="1280:720"
+      )
+      print(f"Task id is: {task.id}")
+      return task.id
   except TaskFailedError as e:
     print("The video failed to generate")
     print(e.task_details)

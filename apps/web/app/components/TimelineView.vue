@@ -238,7 +238,7 @@ const ticks = computed(() => {
               class="absolute top-0 bottom-0 z-20 pointer-events-none"
               :style="{ left: timeline.playheadX + 'px' }"
             >
-              <div class="w-2.5 h-2.5 bg-[#0099ff] rounded-full -translate-x-[4.5px]" />
+              <div class="w-2.5 h-2.5 bg-[#0099ff] rounded-full -translate-x-[0.5px]" />
               <div class="w-px bg-[#0099ff] mx-auto" style="height: calc(100% - 10px)" />
             </div>
           </div>
